@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,13 +45,8 @@ public class AuthController {
     public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest authRequest){
         UserDto user = null;
 
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(),
-                    authRequest.getPassword()));
-        }
-        catch (BadCredentialsException badCredentialsException){
-            throw new BadCredentialsException("Incorrect username/password");
-        }
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(),
+                authRequest.getPassword()));
 
         ResponseEntity<UserDto> userResponseEntity = feignConsumer.getUserByEmail(authRequest.getEmail());
         user = userResponseEntity.getBody();
