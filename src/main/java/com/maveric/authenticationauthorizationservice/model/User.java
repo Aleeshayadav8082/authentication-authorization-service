@@ -1,37 +1,44 @@
 package com.maveric.authenticationauthorizationservice.model;
 
+import com.maveric.authenticationauthorizationservice.constant.Gender;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import com.maveric.authenticationauthorizationservice.constant.Gender;
-import lombok.Data;
 
 import java.util.Collection;
+import java.util.Collections;
 
 @Data
-    public class User implements UserDetails {
-        private  String id;
+@Builder
+public class User implements UserDetails {
 
-        private String firstName;
+    private String id;
 
-        private String middleName;
+    private String firstName;
 
-        private String lastName;
+    private String middleName;
 
-        private String email;
+    private String lastName;
 
-        private String phoneNumber;
+    private String email;
 
-        private String address;
+    private String phoneNumber;
 
-        private String dateOfBirth;
+    private String address;
 
-        private Gender gender;
+    private String dateOfBirth;
 
-        private String password;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    private String password;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override

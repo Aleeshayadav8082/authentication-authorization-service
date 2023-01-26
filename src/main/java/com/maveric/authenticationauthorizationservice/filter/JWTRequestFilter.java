@@ -1,7 +1,7 @@
 package com.maveric.authenticationauthorizationservice.filter;
 
-import com.maveric.authenticationauthorizationservice.feignclient.UserFeignService;
-import com.maveric.authenticationauthorizationservice.model.User;
+import com.maveric.authenticationauthorizationservice.dto.UserDto;
+import com.maveric.authenticationauthorizationservice.feignclient.FeignConsumer;
 import com.maveric.authenticationauthorizationservice.service.JWTService;
 import com.maveric.authenticationauthorizationservice.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -20,39 +20,46 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-public class JwtRequestFilter extends OncePerRequestFilter {
+public class JWTRequestFilter extends OncePerRequestFilter {
 
     @Autowired
-    private JWTService jwtService;
+    JWTService jwtService;
 
     @Autowired
-    private UserService userService;
+    UserService userService;
 
     @Autowired
-    private UserFeignService userFeignService;
+    FeignConsumer feignConsumer;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        final String authoriazationHeader = request.getHeader("Authorization");
-
-        String emailId = null;
+        final String authHeader = request.getHeader("Authorization");
         String jwt = null;
-        if (authoriazationHeader != null && authoriazationHeader.startsWith("Bearer ")) {
-            jwt = authoriazationHeader.substring(7);
-            emailId = jwtService.getUserEmail(jwt);
+        String userEmail = null;
+
+        if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        if (emailId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userService.loadUserByUsername(emailId);
-            if (jwtService.validateToken(jwt, userDetails)) {
-                ResponseEntity<User> objectResponseEntity = userFeignService.getUserByEmail(emailId);
-                User getUserIdFromUser = objectResponseEntity.getBody();
+        jwt = authHeader.substring(7);
+        userEmail = jwtService.extractUserEmail(jwt);
+
+        if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
+            UserDetails userDetails = this.userService.loadUserByUsername(userEmail);
+            if(jwtService.isTokenValid(jwt, userDetails)){
+                ResponseEntity<UserDto> userResponseEntity = feignConsumer.getUserByEmail(userEmail);
+                UserDto getUserIdFromUser = userResponseEntity.getBody();
                 request.setAttribute("userId", getUserIdFromUser.getId());
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             }
         }
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 }

@@ -1,9 +1,10 @@
 package com.maveric.authenticationauthorizationservice.service;
 
-import com.maveric.authenticationauthorizationservice.feignclient.UserFeignService;
+import com.maveric.authenticationauthorizationservice.dto.UserDto;
+import com.maveric.authenticationauthorizationservice.exception.UserNotFoundException;
+import com.maveric.authenticationauthorizationservice.feignclient.FeignConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,11 +16,16 @@ import java.util.ArrayList;
 public class UserService implements UserDetailsService {
 
     @Autowired
-    UserFeignService userFeignService;
+    FeignConsumer feignConsumer;
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        ResponseEntity<com.maveric.authenticationauthorizationservice.model.User> objectResponseEntity = userFeignService.getUserByEmail(email);
-        com.maveric.authenticationauthorizationservice.model.User reqUser = objectResponseEntity.getBody();
-        return new User(reqUser.getEmail(), reqUser.getPassword(), new ArrayList<>());
+        ResponseEntity<UserDto> userResponseEntity = feignConsumer.getUserByEmail(email);
+        if(userResponseEntity.getBody() != null){
+            UserDto user = userResponseEntity.getBody();
+            return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), new ArrayList<>());
+        }else {
+            throw new UserNotFoundException("User not found with the email " + email);
+        }
     }
 }

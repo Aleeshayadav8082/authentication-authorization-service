@@ -1,100 +1,73 @@
 package com.maveric.authenticationauthorizationservice.controller;
 
-import com.maveric.authenticationauthorizationservice.constant.ErrorMessageConstant;
 import com.maveric.authenticationauthorizationservice.dto.AuthRequest;
 import com.maveric.authenticationauthorizationservice.dto.AuthResponse;
-import com.maveric.authenticationauthorizationservice.feignclient.UserFeignService;
-import com.maveric.authenticationauthorizationservice.model.User;
+import com.maveric.authenticationauthorizationservice.dto.UserDto;
+import com.maveric.authenticationauthorizationservice.feignclient.FeignConsumer;
 import com.maveric.authenticationauthorizationservice.service.JWTService;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
-
-
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("api/v1")
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private UserFeignService userFeignService;
+    AuthenticationManager authenticationManager;
 
     @Autowired
-    private JWTService jwtService;
+    FeignConsumer feignConsumer;
 
     @Autowired
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+    JWTService jwtService;
+
+    @Autowired
+    BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @PostMapping("/auth/signup")
+    public ResponseEntity<AuthenticationResponse> signup(@Valid @RequestBody UserDto userDto){
+        ResponseEntity<UserDto> userResponseEntity = feignConsumer.createUser(userDto);
+        final String jwt = jwtService.generateToken(userResponseEntity.getBody());
+
+        return new ResponseEntity<>(getAuthResponse(jwt, userResponseEntity.getBody()), HttpStatus.OK);
+    }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<AuthResponse> createAuthToken(@RequestBody AuthRequest authRequest){
-        User user = null;
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest authRequest){
+        UserDto user = null;
 
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(),authRequest.getPassword()));
-
-        }catch (BadCredentialsException badCredentialsException){
-            throw new BadCredentialsException(ErrorMessageConstant.EMAIL_PASSWORD_ERROR);
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(),
+                    authRequest.getPassword()));
+        }
+        catch (BadCredentialsException badCredentialsException){
+            throw new BadCredentialsException("Incorrect username/password");
         }
 
-        ResponseEntity<User> objectResponseEntity = userFeignService.getUserByEmail(authRequest.getEmail());
-        user = objectResponseEntity.getBody();
+        ResponseEntity<UserDto> userResponseEntity = feignConsumer.getUserByEmail(authRequest.getEmail());
+        user = userResponseEntity.getBody();
 
         final String jwt = jwtService.generateToken(user);
 
-        AuthResponse authResponse = getAuthResponse(jwt , user);
-
-        return ResponseEntity.status(HttpStatus.OK).body(authResponse);
-    }
-    @PostMapping("/auth/signup")
-    public ResponseEntity<AuthResponse> signup(@RequestBody User user) {
-        ResponseEntity<User> objectResponseEntity = userFeignService.createUser(user);
-
-        final String jwt = jwtService.generateToken(objectResponseEntity.getBody());
-
-        AuthResponse authResponse = getAuthResponse(jwt ,objectResponseEntity.getBody());
-
-        return ResponseEntity.status(HttpStatus.OK).body(authResponse);
-    }
-
-    @GetMapping("/auth/validateToken")
-    public ResponseEntity<ConnValidationResponse> validateGet(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");
-        return ResponseEntity.ok(ConnValidationResponse.builder().status("OK").methodType(HttpMethod.GET.name())
-                .userId(userId)
-                .isAuthenticated(true).build());
-    }
-
-    @Getter
-    @Builder
-    @ToString
-    public static class ConnValidationResponse {
-        private String status;
-        private boolean isAuthenticated;
-        private String methodType;
-        private String userId;
+        return new ResponseEntity<>(getAuthResponse(jwt, user), HttpStatus.OK);
     }
 
 
-    public AuthResponse getAuthResponse(String token ,User user){
-        AuthResponse authResponse = new AuthResponse();
+    public AuthenticationResponse getAuthResponse(String token , UserDto user){
+        AuthenticationResponse authResponse = new AuthenticationResponse();
         authResponse.setUser(user);
         authResponse.setToken(token);
 
         return authResponse;
-
     }
-
-
 }
