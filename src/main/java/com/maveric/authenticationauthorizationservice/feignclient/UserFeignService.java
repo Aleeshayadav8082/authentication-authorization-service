@@ -17,7 +17,7 @@ public class UserFeignService {
     }
 
     @PostMapping("/users")
-    ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@RequestBody User user) {
         return null;
     }
 }

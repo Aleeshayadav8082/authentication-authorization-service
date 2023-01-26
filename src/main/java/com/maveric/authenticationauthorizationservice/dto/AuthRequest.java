@@ -9,4 +9,12 @@ public class AuthRequest {
 
     @Min(3)
     private String password;
+
+    public String getEmail() {
+        return null;
+    }
+
+    public Object getPassword() {
+        return null;
+    }
 }
