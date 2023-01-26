@@ -6,6 +6,8 @@ import jakarta.persistence.Enumerated;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 @Builder
 public class UserDto {
@@ -23,7 +25,7 @@ public class UserDto {
 
     private String address;
 
-    private String dateOfBirth;
+    private Date dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     private Gender gender;
