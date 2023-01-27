@@ -34,7 +34,7 @@ public class AuthController {
     BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @PostMapping("/auth/signup")
-    public ResponseEntity<AuthenticationResponse> signup(@Valid @RequestBody UserDto userDto){
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody UserDto userDto){
         ResponseEntity<UserDto> userResponseEntity = feignConsumer.createUser(userDto);
         final String jwt = jwtService.generateToken(userResponseEntity.getBody());
 
@@ -42,7 +42,7 @@ public class AuthController {
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthRequest authRequest){
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest){
         UserDto user = null;
 
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getEmail(),
@@ -57,8 +57,8 @@ public class AuthController {
     }
 
 
-    public AuthenticationResponse getAuthResponse(String token , UserDto user){
-        AuthenticationResponse authResponse = new AuthenticationResponse();
+    public AuthResponse getAuthResponse(String token , UserDto user){
+        AuthResponse authResponse = new AuthResponse();
         authResponse.setUser(user);
         authResponse.setToken(token);
 
