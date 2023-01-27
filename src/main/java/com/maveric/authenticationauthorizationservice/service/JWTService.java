@@ -1,6 +1,6 @@
 package com.maveric.authenticationauthorizationservice.service;
 
-import com.maveric.authenticationauthorizationservice.model.User;
+import com.maveric.authenticationauthorizationservice.dto.UserDto;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,42 +15,50 @@ import java.util.function.Function;
 @Service
 public class JWTService {
 
-    private final String SECRET_KEY = "secret";
+    private static final String SECRET_KEY = "secretkey";
 
-    public String getUserEmail(String token){
-        return getClaim(token,Claims::getSubject);
+    public String extractUserEmail(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
-    public Date getExpiration(String token){
-        return getClaim(token,Claims::getExpiration);
-    }
-
-    public <T> T getClaim(String token, Function<Claims,T> claimsResolver){
-        final Claims claims =extractAllClaims(token);
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver){
+        final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    public Claims extractAllClaims(String token){
-        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+    public String generateToken(UserDto user){
+        return generateToken(new HashMap<>(), user.getEmail());
+    }
+
+    public String generateToken(Map<String, Object> extraClaims, String userEmail){
+        return Jwts
+                .builder()
+                .setClaims(extraClaims)
+                .setSubject(userEmail)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .compact();
+    }
+
+    public Boolean isTokenValid(String token, UserDetails userDetails){
+        final String id = extractUserEmail(token);
+        return (id.equals(userDetails.getUsername()) && isTokenExpired(token));
     }
 
     private Boolean isTokenExpired(String token){
-        return getExpiration(token).before(new Date());
+        return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(User user){
-        Map<String,Object> claims = new HashMap<>();
-        return createToken(claims,user.getEmail());
+    public Date extractExpiration(String token){
+        return extractClaim(token, Claims::getExpiration);
     }
 
-    private String createToken(Map<String,Object> claims , String emailId){
-        return Jwts.builder().setClaims(claims).setSubject(emailId).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() +1000 * 60 * 60 * 10))
-                .signWith(SignatureAlgorithm.HS256,SECRET_KEY).compact();
-    }
-
-    public Boolean validateToken(String token , UserDetails userDetails){
-        final String id =getUserEmail(token);
-        return (id.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    private Claims extractAllClaims(String token){
+        return Jwts
+                .parser()
+                .setSigningKey(SECRET_KEY)
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

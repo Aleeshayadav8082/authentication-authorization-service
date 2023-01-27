@@ -1,12 +1,17 @@
 package com.maveric.authenticationauthorizationservice.dto;
 
 import com.maveric.authenticationauthorizationservice.constant.Gender;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import lombok.Builder;
 import lombok.Data;
 
-@Data
-public class UserDto {
+import java.util.Date;
 
-    private  String id;
+@Data
+@Builder
+public class UserDto {
+    private String id;
 
     private String firstName;
 
@@ -20,7 +25,10 @@ public class UserDto {
 
     private String address;
 
-    private String dateOfBirth;
+    private Date dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
     private Gender gender;
+
+    private String password;
 }

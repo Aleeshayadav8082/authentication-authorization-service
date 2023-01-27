@@ -9,4 +9,5 @@ class AuthenticationAuthorizationServiceApplicationTests {
 	@Test
 	void contextLoads() {
 	}
+
 }
