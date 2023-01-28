@@ -1,6 +1,7 @@
 package com.maveric.authenticationauthorizationservice.exception;
 
 import com.maveric.authenticationauthorizationservice.dto.ErrorDto;
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,11 +19,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-//    @ExceptionHandler(FeignException.class)
-//    public ResponseEntity<ErrorDto> handleFeign(FeignException e) {
-//        ErrorDto error = getError(e.getMessage(), String.valueOf(HttpStatus.NOT_FOUND.value()));
-//        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
-//    }
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorDto> handleFeign(FeignException e) {
+        ErrorDto error = getError(e.getMessage(), String.valueOf(HttpStatus.NOT_FOUND.value()));
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorDto>  handleInvalidInput(MethodArgumentNotValidException methodArgumentNotValidException){
