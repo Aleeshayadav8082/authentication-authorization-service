@@ -1,6 +1,5 @@
 package com.maveric.authenticationauthorizationservice.controller;
 
-import com.maveric.authenticationauthorizationservice.dto.AuthRequest;
 import com.maveric.authenticationauthorizationservice.dto.AuthResponse;
 import com.maveric.authenticationauthorizationservice.dto.UserDto;
 import com.maveric.authenticationauthorizationservice.feignclient.FeignConsumer;
